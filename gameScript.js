@@ -2,6 +2,21 @@
     Author: ??
     Disclaimer: This is the first program the author has written in JavaScript
 */
+/*
+ TODO:
+
+ Pixels look weird with auto scaling. Hard values: 1x, 2x, 3x ...
+ 
+ Butteflies flying in foreground.
+ Pick up items (center of hitbox?).
+ Pick up berries, if last end game.
+ Cloud. Check limit amount on sam x-coordinate.
+ Font on title.
+ 
+ UI!
+ 
+*/
+
 var version = "v.0.1";
 var title = "Little Cake Adventure";
 document.getElementById("header").innerHTML = title + " " + version;
@@ -24,9 +39,8 @@ var jumpSound = new Audio("Sounds/Hopp.mp3");
 var bgMusic = new Audio("Sounds/Cooking%20by%20the%20book%208%20bit.mp3");
 
 var BG_i = 0, PlayerSheet_i = 1, BushSheet_i = 2, ItemsSheet_i = 3, ButterflySheet_i = 4,
-	Level_i = 5, LevelForeground_i = 6;
-var img_names = ["Stationary/BEAN_BG.png","Animations/bean_sprite.png","Animations/buske_sheet.png","Animations/ITEMS_sheet.png","Animations/butterfly_sheet.png",
-"Stationary/bean_lvl.png","Stationary/bean_lvl_bro.png"];
+	Level_i = 5, LevelForeground_i = 6, Mountains_i = 7, Cloud_i = 8;
+var img_names = ["Stationary/BEAN_BG.png","Animations/bean_sprite.png","Animations/buske_sheet.png","Animations/ITEMS_sheet.png","Animations/butterfly_sheet.png", "Stationary/bean_lvl.png","Stationary/bean_lvl_bro.png", "Stationary/berg.png", "Stationary/moln1.png"];
 var imgs = [];
 var loadingComplete = false;
 
@@ -43,7 +57,26 @@ var playerIdleCycleLeft = [9,9,10,10,11,11,10,10]; //0.2
 var playerJumpRight = [36,37,38,39,39,40]; //Jump
 var playerJumpLeft = [45,46,47,48,48,49]; //Jump
 var landFrames = 3;
+var item_egg;
+var item_egg_animation;
+var item_egg_cycle = [0,1]; //0.2
+var item_flour;
+var item_flour_animation;
+var item_flour_cycle = [2,3]; //0.2
+var item_sugar;
+var item_sugar_animation;
+var item_sugar_cycle = [5,6]; //0.2
+var item_butter;
+var item_butter_animation;
+var item_butter_cycle = [7,8]; //0.2
+var item_berries;
+var item_berries_animation;
+var item_berries_cycle = [0,1]; //0.2
+var item_bush_cycle = [2];
 var platforms = [];
+
+var cloudAmmount = 20;
+var clouds = [];
 
 var leftKeyDown = false;
 var rightKeyDown = false;
@@ -59,6 +92,12 @@ var keysRightDown; //(rightKeyDown || dKeyDown);
 var keysUpDown; //(upKeyDown || wKeyDown);
 var keysDownDown; // (downKeyDown || sKeyDown);
 
+var objective_egg = false;
+var objective_flour = false;
+var objective_sugar = false;
+var objective_butter = false;
+var objective_berries = false;
+
 function loadImages(callback) {
   var n, count = img_names.length;
   var onload = function() { 
@@ -71,9 +110,7 @@ function loadImages(callback) {
     imgs[n] = document.createElement('img');
 	imgs[n].addEventListener('load', onload);
     imgs[n].src = name;
-	//debugText.innerHTML = "Loading: " + (n+1) + "/" + img_names.length;
   }
-  //debugText.innerHTML = "";
 
 }
 
@@ -98,34 +135,58 @@ function initialize(){
 		else if(camera.posX >= imgs[Level_i].width - camera.width){
 			camera.posX = imgs[Level_i].width - camera.width;
 		}
-	};	
+	};
+	
 	// Player
 	player = new Entity(10,10,52,58,"#111111", 0, 0, 1.1, true);
 	playerAnimation = new animatedSprite(imgs[PlayerSheet_i], 52, 58, 6, 9, 0.1);
 	
-	// Entities
+	// Entities infront
+	item_egg = new Entity(589,180,35,35,"#111111", 0, 0, 0, false);
+	item_egg_animation = new animatedSprite(imgs[ItemsSheet_i], 35,35,2,5,0.4);
+	// Entities behind
+	item_sugar = new Entity(2056,179,35,35,"#111111", 0, 0, 0, false);
+	item_sugar_animation = new animatedSprite(imgs[ItemsSheet_i], 35,35,2,5,0.4);
+	item_flour = new Entity(1082,52,35,35,"#111111", 0, 0, 0, false);
+	item_flour_animation = new animatedSprite(imgs[ItemsSheet_i], 35,35,2,5,0.4);
+	item_butter = new Entity(2438,52,35,35,"#111111", 0, 0, 0, false);
+	item_butter_animation = new animatedSprite(imgs[ItemsSheet_i], 35,35,2,5,0.4);
+	item_berries = new Entity(3535,181,69,35,"#111111", 0, 0, 0, false);
+	item_berries_animation = new animatedSprite(imgs[BushSheet_i], 69,35,2,2,0.4);
 	
+	
+	// Clouds
+	for(j=0; j<cloudAmmount; ++j){
+		var cloudHeight = Math.random();
+		var cloudX = Math.random()*imgs[Level_i].width;
+			clouds[j] =
+				new Entity(cloudX, cloudHeight*imgs[Level_i].height*0.5+imgs[Level_i].height*0.05, imgs[Cloud_i].width, imgs[Cloud_i].height, "#000000", -1, 0, 100, false, 0.6-0.5*cloudHeight/2);
+			clouds[j].velX = -0.5*clouds[j].distanceScaling*clouds[j].distanceScaling;
+			clouds[j].width = imgs[Cloud_i].width * (0.6+clouds[j].distanceScaling);
+			clouds[j].height = imgs[Cloud_i].height * (0.6+clouds[j].distanceScaling);
+	}
+
 	
 	// Platforms and Blocks
 	var i = 0;
-	platforms[i++] = new Block(0, 213, 316, 87);
-	platforms[i++] = new Block(365, 183, 89, 177);
-	platforms[i++] = new Block(546, 213, 88, 87);
-	platforms[i++] = new Block(699, 213, 881, 87);
-	platforms[i++] = new Platform(890, 140, 305, 2);
-	platforms[i++] = new Platform(1075, 87, 108, 2);
-	platforms[i++] = new Block(1653, 181, 90, 119);
-	platforms[i++] = new Block(1808, 182, 89, 118);
-	platforms[i++] = new Block(1955, 213, 169, 87);
-	platforms[i++] = new Block(2186, 213, 594, 87);
-	platforms[i++] = new Platform(2251, 139, 179, 2);
-	platforms[i++] = new Platform(2412, 87, 140, 2);
-	platforms[i++] = new Platform(2533, 140, 177, 2);
-	platforms[i++] = new Block(2823, 182, 89, 118);
-	platforms[i++] = new Block(2974, 182, 54, 118);
-	platforms[i++] = new Block(3074, 140, 53, 160);
-	platforms[i++] = new Block(3153, 87, 54, 213);
-	platforms[i++] = new Block(3337, 213, 316, 87);
+	platforms[i++] = new Block(0, 212, 316, 88);
+	platforms[i++] = new Block(365, 182, 89, 178);
+	platforms[i++] = new Block(546, 212, 88, 88);
+	platforms[i++] = new Block(699, 212, 881, 88);
+	platforms[i++] = new Platform(890, 139, 305, 2);
+	platforms[i++] = new Platform(1075, 86, 108, 2);
+	platforms[i++] = new Block(1653, 180, 90, 120);
+	platforms[i++] = new Block(1808, 181, 89, 119);
+	platforms[i++] = new Block(1955, 212, 169, 88);
+	platforms[i++] = new Block(2186, 212, 594, 88);
+	platforms[i++] = new Platform(2251, 138, 179, 2);
+	platforms[i++] = new Platform(2412, 86, 140, 2);
+	platforms[i++] = new Platform(2533, 139, 177, 2);
+	platforms[i++] = new Block(2823, 181, 89, 119);
+	platforms[i++] = new Block(2974, 181, 54, 119);
+	platforms[i++] = new Block(3074, 139, 53, 161);
+	platforms[i++] = new Block(3153, 86, 54, 214);
+	platforms[i++] = new Block(3337, 212, 316, 88);
 	
 	// Done
 	loadingComplete = true;
@@ -145,8 +206,11 @@ function update(){
     controlsCheck();
     player.update();
 	platforms.forEach(collisionCheckElement);
-				debugText.innerHTML = "TEST";
+	objectiveCheck();
     camera.update();
+	updateClouds();
+	
+	/* Player boundaries */
 	if(player.posY > camera.posY+camera.height-player.height){
 		player.posY = camera.posY+camera.height-player.height;
 		player.onGround = true;
@@ -158,10 +222,41 @@ function update(){
 	if(player.posX < camera.posX){
 		player.posX = camera.posX;
 	}
-	/*debugText.innerHTML = "Time: " + playerAnimation.currentTime +
-						  "| FrameIndex: " + playerAnimation.currentFrameIndex +
-						  "| VelX: " + player.velX + "| VelY: " + player.velY +
-						  "| onGround: " + player.onGround + "| landCounter: " + player.landCounter;*/
+}
+
+function objectiveCheck(){
+	if(!objective_egg && item_egg.collisionCheck(player)){
+		objective_egg = true;
+	}
+	if(!objective_flour && item_flour.collisionCheck(player)){
+		objective_flour = true;
+	}
+	if(!objective_sugar && item_sugar.collisionCheck(player)){
+		objective_sugar = true;
+	}
+	if(!objective_butter && item_butter.collisionCheck(player)){
+		objective_butter = true;
+	}
+	if(item_berries.collisionCheck(player))
+		objective_berries = true;
+}
+
+function updateClouds(){
+	for(i=0; i<cloudAmmount; ++i){
+		if(clouds[i].posX/clouds[i].distanceScaling < camera.posX - camera.width){
+			clouds[i].posX = imgs[Level_i].width * (1 + Math.random()/2);
+			var cloudHeight = Math.random();
+			clouds[i].posY = cloudHeight*imgs[Level_i].height*0.5+imgs[Level_i].height*0.05;
+			clouds[i].distanceScaling = 0.6-0.3*cloudHeight;
+			clouds[j].velX = -0.5*clouds[j].distanceScaling*clouds[j].distanceScaling;
+			clouds[j].width = imgs[Cloud_i].width * (0.6+clouds[j].distanceScaling);
+			clouds[j].height = imgs[Cloud_i].height * (0.6+clouds[j].distanceScaling);
+		}
+		clouds[i].update();
+	}
+	clouds.sort(function(a, b){
+		return parseFloat(a.distanceScaling) - parseFloat(b.distanceScaling);
+	});
 }
 
 function controlsCheck(){
@@ -236,13 +331,55 @@ function draw(){
 	
 	/* Sky */
 	ctx.drawImage(imgs[BG_i],0,0,canvas.width,canvas.height);
+			
+	/* Clouds */ 
+	for( i = 0; i < clouds.length; ++i){
+		if(!clouds[i])
+			continue;
+		ctx.drawImage(imgs[Cloud_i],getDrawCoordinate(clouds[i].posX, camera.posX*clouds[i].distanceScaling, widthScale),
+									getDrawCoordinate(clouds[i].posY, camera.posY*clouds[i].distanceScaling, heightScale),
+									clouds[i].width*widthScale,
+									clouds[i].height*heightScale);
+	}
 	
 	/* Far Background */
+	ctx.drawImage(imgs[Mountains_i],
+		getBackgroundDrawCoordinate(imgs[Mountains_i].width, camera.width, camera.posX, imgs[Level_i].width, widthScale),
+		0,
+		imgs[Mountains_i].width*widthScale,
+		canvas.height);
+
+	var frame;
+	/* Entities behind grass */
+	if(!objective_berries)
+		item_berries_animation.updateTime(item_berries_cycle);
+	else
+		item_berries_animation.updateTime(item_bush_cycle);
+	frame = item_berries_animation.getFrame();
+	ctx.drawImage(item_berries_animation.image, frame.x-1, frame.y+1, frame.width, frame.height, getDrawCoordinate(item_berries.posX, camera.posX, widthScale), getDrawCoordinate(item_berries.posY, camera.posY, heightScale), item_berries.width*widthScale, item_berries.height*heightScale);
+	
 	
 	
 	/* Near Background */
 	ctx.drawImage(imgs[Level_i],getDrawCoordinate(0, camera.posX, widthScale), getDrawCoordinate(0, camera.posY, heightScale), imgs[Level_i].width*widthScale, imgs[Level_i].height*heightScale);
     
+	/* Entities behind player */
+	if(!objective_sugar){
+		item_sugar_animation.updateTime(item_sugar_cycle);
+		frame = item_sugar_animation.getFrame();
+		ctx.drawImage(item_sugar_animation.image, frame.x-1, frame.y+1, frame.width, frame.height, getDrawCoordinate(item_sugar.posX, camera.posX, widthScale), getDrawCoordinate(item_sugar.posY, camera.posY, heightScale), item_sugar.width*widthScale, item_sugar.height*heightScale);
+	}
+	if(!objective_flour){
+		item_flour_animation.updateTime(item_flour_cycle);
+		frame = item_flour_animation.getFrame();
+		ctx.drawImage(item_flour_animation.image, frame.x-1, frame.y+1, frame.width, frame.height, getDrawCoordinate(item_flour.posX, camera.posX, widthScale), getDrawCoordinate(item_flour.posY, camera.posY, heightScale), item_flour.width*widthScale, item_flour.height*heightScale);
+	}
+	if(!objective_butter){
+		item_butter_animation.updateTime(item_butter_cycle);
+		frame = item_butter_animation.getFrame();
+		ctx.drawImage(item_butter_animation.image, frame.x-1, frame.y+1, frame.width, frame.height, getDrawCoordinate(item_butter.posX, camera.posX, widthScale), getDrawCoordinate(item_butter.posY, camera.posY, heightScale), item_butter.width*widthScale, item_butter.height*heightScale);
+	}
+	
 	/* Player */
 	if(player.landCounter > 0 || !player.onGround){
 		if(player.facingRight){
@@ -262,15 +399,22 @@ function draw(){
 			playerAnimation.updateTime(playerIdleCycleLeft);
 	}
 	
-    var frame = playerAnimation.getFrame();
+    frame = playerAnimation.getFrame();
     
     ctx.drawImage(playerAnimation.image, frame.x-1, frame.y+1, frame.width, frame.height, getDrawCoordinate(player.posX, camera.posX, widthScale), getDrawCoordinate(player.posY, camera.posY, heightScale), player.width*widthScale, player.height*heightScale);
 	/* END PLAYER */
 	
+	/* Entities infront of player */
+	if(!objective_egg){
+		item_egg_animation.updateTime(item_egg_cycle);
+		frame = item_egg_animation.getFrame();
+		ctx.drawImage(item_egg_animation.image, frame.x-1, frame.y+1, frame.width, frame.height, getDrawCoordinate(item_egg.posX, camera.posX, widthScale), getDrawCoordinate(item_egg.posY, camera.posY, heightScale), item_egg.width*widthScale, item_egg.height*heightScale);
+	}
+	
 	/* Near Foreground */
 	ctx.drawImage(imgs[LevelForeground_i],getDrawCoordinate(0, camera.posX, widthScale), getDrawCoordinate(0, camera.posY, heightScale), imgs[Level_i].width*widthScale, imgs[Level_i].height*heightScale);
 	
-	ctx.fillStyle = "#444411";
+	/*ctx.fillStyle = "#444411";
 	ctx.fillRect(getDrawCoordinate(player.hitBox.posX, camera.posX, widthScale),
 		getDrawCoordinate(player.hitBox.posY, camera.posY, heightScale),
 		player.hitBox.width*widthScale,
@@ -282,7 +426,13 @@ function draw(){
 		getDrawCoordinate(platforms[i].posY, camera.posY, heightScale),
 		platforms[i].width*widthScale,
 		platforms[i].height*heightScale);
-	}
+	}*/
+}
+
+function getBackgroundDrawCoordinate(sizeRef, cameraSizeRef, cameraCoordRef, levelSizeRef, scale){
+	return ((levelSizeRef-sizeRef)*(cameraCoordRef/(levelSizeRef-cameraSizeRef)) - cameraCoordRef)*scale;
+	// 0->(levelWidth - imageWidth)		<= Far background
+	// 0->(levelWidth - cameraWidht)    <= Camera
 }
 
 function getDrawCoordinate(coordRef, cameraRef, scale){
@@ -416,7 +566,7 @@ function Platform(posX, posY, width, height){
 	};
 }
 
-function Entity(posX, posY, width, height, color, velX, velY, speed, gravityEffect){
+function Entity(posX, posY, width, height, color, velX, velY, speed, gravityEffect, distanceScaling){
     this.posX = posX || 0;
     this.posY = posY || 0;
     this.width = width || 10;
@@ -430,6 +580,7 @@ function Entity(posX, posY, width, height, color, velX, velY, speed, gravityEffe
 	this.onGround = true;
 	this.landCounter = 0;
 	this.gravityEffect = gravityEffect || false;
+	this.distanceScaling = distanceScaling || 1;
     
     this.update = function (){
 		if(this.gravityEffect){
@@ -449,6 +600,16 @@ function Entity(posX, posY, width, height, color, velX, velY, speed, gravityEffe
 		this.hitbox.posX = this.posX+3*this.width/10;
 		this.hitbox.posY = this.posY+this.height/10;
     };
+	
+	this.collisionCheck = function(entity){
+		var hitbox = entity.hitbox; 
+		if(hitbox.posX+hitbox.width > this.posX+this.width/3 && hitbox.posX < this.posX+2*this.width/3){
+			if(hitbox.posY+hitbox.height > this.posY+this.height/2 && hitbox.posY < this.posY+this.height){
+				return true;
+			}
+		}
+		return false;
+	};
 }
 
 function animatedSprite(image, frameWidth, frameHeight, rows, columns, spf){
