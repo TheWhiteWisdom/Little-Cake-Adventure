@@ -6,8 +6,6 @@
 </head>
 
 <body onresize="resizeCanvas()" style="background-color:#CCD7CC">
-<img id="playerSpritesheet" src="Animations/bean_sprite.png" style="display:none"></img>
-<img id="backgroundImage" src="Stationary/BEAN_BG.png" style="display:none"></img>
 
 <center>
 <h1 id="header">Bag Bean Adventure</h1>
@@ -21,35 +19,5 @@
 </center>
 
 <script type="text/javascript" src="gameScript.js"></script>
-
-<script>
-    var aspectRatio = 0.567;
-    var insetRatio = 0.95;
-    
-    function resizeCanvas(){
-        var webWidth = window.innerWidth
-        || document.documentElement.clientWidth
-        || document.body.clientWidth;
-        var webHeight = window.innerHeight
-        || document.documentElement.clientHeight
-        || document.body.clientHeight;
-    
-        var canvas = document.getElementById("gameCanvas");
-		var endImg = document.getElementById("endImg");
-        if(webHeight/webWidth > aspectRatio){
-            canvas.width = webWidth*insetRatio;
-            canvas.height = canvas.width*aspectRatio;
-        }
-        else{
-            canvas.height = webHeight*insetRatio;
-            canvas.width = canvas.height/aspectRatio;
-        }
-		endImg.height = canvas.height;
-		endImg.width = canvas.width;
-		
-    }
-    resizeCanvas();
-    
-</script>
 </body>
 </html>
