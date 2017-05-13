@@ -1,13 +1,13 @@
 ## images
-*.jpg
-*.png
-*.gif
-*.tga
-*.bmp
-*.psd
+#*.jpg
+#*.png
+#*.gif
+#*.tga
+#*.bmp
+#*.psd
 
 ## sound
-*.mp3
+#*.mp3
 
 ## other
 *.rtf
