@@ -151,7 +151,6 @@ function moveTo(currentVal, targetVal){
 
 function initialize(){
 	// Values
-	
 	failed = false;
 	
 	objective_egg = false;
@@ -271,6 +270,8 @@ function restart(){
 
 
 function mainLoop(){
+	if(canvas.style.display == "none")
+		return;
     update();
     draw();
 }
@@ -441,8 +442,9 @@ function controlsCheck(){
 		mousePosX < imgs[BG_i].width-imgs[infoHidden_i].width)
 		if(mousePosY > imgs[BG_i].height-imgs[infoHidden_i].height &&
 		mousePosY < imgs[BG_i].height){
-			if(mouseClicked)
+			if(mouseClicked){
 				soundOn = !soundOn;
+			}
 		}
 			
 	mouseClicked = false;
