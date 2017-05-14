@@ -31,13 +31,14 @@ var insetRatio = 0.95;
 var mousePos;
 var canvas = document.getElementById("gameCanvas");
 var endImg = document.getElementById("endImg");
+var startImg = document.getElementById("startImg");
 resizeCanvas();
 var ctx = canvas.getContext("2d");
 
 var debugText = document.getElementById("debugText");
 
 var showInfo = false;
-var soundOn = false;
+var soundOn = true;
 var jumpSound = new Audio("Sounds/Hopp.mp3");
 var bgMusic = new Audio("Sounds/Cooking%20by%20the%20book%208%20bit.mp3");
 bgMusic.volume = 0.4;
@@ -58,6 +59,7 @@ var loadingComplete = false;
 canvas.addEventListener('mousemove', function(evt) {
     mousePos = getInGameMousePos(canvas, evt);
 }, false);
+
 loadImages(initialize);
 
 var gravity = 0.198;
@@ -180,7 +182,7 @@ function initialize(){
 	playerAnimation = new animatedSprite(imgs[PlayerSheet_i], 52, 58, 6, 9, 0.1);
 	
 	butterfly = new Entity(camera.posX+camera.width + 50 + Math.random()*250,
-							imgs[BG_i].height*(0.8+Math.random()*0.1),
+							imgs[BG_i].height*(0.4+Math.random()*0.1),
 							14,16,"#111111", -2, 0, 100, false);
 	butterflyAnimation = new animatedSprite(imgs[ButterflySheet_i], 14, 16, 1, 3, 0.2);
 	
@@ -352,7 +354,7 @@ function objectiveCheck(){
 		objective_sugar &&
 		goal_door.collisionCheck(player)){
 			canvas.style.display = "none";
-			document.getElementById("endImg").style.display = "block";
+			endImg.style.display = "block";
 	}
 }
 
@@ -376,7 +378,7 @@ function updateClouds(){
 	butterfly.update();
 	if(butterfly.posX < camera.posX - camera.width - 100){
 		butterfly.posX = camera.posX+camera.width + 50 + Math.random()*250;
-		butterfly.posY = imgs[BG_i].height*(0.8+Math.random()*0.1);
+		butterfly.posY = imgs[BG_i].height*(0.4+Math.random()*0.1);
 	}
 	
 	
@@ -626,7 +628,13 @@ function getHexColor(number){
     return "#"+((number)>>>0).toString(16).slice(-6);
 }
 
+var mainMenuView = true;
 document.addEventListener('keydown', function(event){
+	if(mainMenuView){
+		mainMenuView = false;
+		canvas.style.display = "block";
+		startImg.style.display = "none";
+	}
     switch(event.keyCode){
         case 37: //Left
             event.preventDefault();
@@ -906,6 +914,8 @@ function resizeCanvas(){
 		
 		endImg.height = canvas.height;
 		endImg.width = canvas.width;
+		startImg.height = canvas.height;
+		startImg.width = canvas.width;
 	}
 }
 var mousePosX = 0;
